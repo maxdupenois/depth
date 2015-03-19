@@ -23,7 +23,7 @@ Or install it yourself as:
 
 ## Usage
 
-#The complex hash
+### The complex hash
 
 ```ruby
   hash = { '$and' => [
@@ -44,11 +44,11 @@ complex_hash = Depth::ComplexHash.new(hash)
 
 Not exactly rocket science (not even data science).
 
-##Manipulation
+### Manipulation
 
 Coming soon...
 
-##Enumeration
+### Enumeration
 
 Coming soon...
 
