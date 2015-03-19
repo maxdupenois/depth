@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'depth/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "Complex Hash"
+  spec.name          = "depth"
   spec.version       = Depth::VERSION
   spec.authors       = ["Max"]
   spec.email         = ["max.dupenois@gmail.com"]
