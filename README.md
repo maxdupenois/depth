@@ -3,6 +3,7 @@
 Depth is a utility gem for deep manipulation of complex hashes, that
 is nested hash and array structures. As you have probably guessed it
 was originally created to deal with a JSON like document structure.
+Importantly it uses a non-recursive approach to its enumeration.
 
 ## Installation
 
@@ -106,7 +107,17 @@ an array, no worries, just say so in the route:
 
 ### Enumeration
 
-Coming soon...
+The messages signatures relating to enumeration are:
+
+* `each` = yields `key_or_index` and `fragment`
+* `map` = yields `fragment`, returns a new complex hash
+* `map_keys` = yields `key_or_index`, returns a new complex hash
+* `map_keys_and_values` = yields `key_or_index`, `fragment` and `parent_type`, returns a new complex hash
+* `map!`, `map_keys!` and `map_keys_and_values!`, returns a new complex hash
+* `reduce(memo)` = yields `memo`, `key` and `fragment`, returns memo
+* `each_with_object(obj)` = yields `key`, `fragment` and `object`, returns object
+
+More information coming soon...
 
 ## Why?
 
