@@ -4,7 +4,6 @@ Depth is a utility gem for deep manipulation of complex hashes, that
 is nested hash and array structures. As you have probably guessed it
 was originally created to deal with a JSON like document structure.
 
-
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -46,11 +45,82 @@ Not exactly rocket science (not even data science).
 
 ### Manipulation
 
-Coming soon...
+Manipulation of the hash is done using routes. A route
+being a description of how to traverse the hash to
+get to this point.
+
+The messages signatures relating to manipulation are:
+
+* `set(route, value)` = Set a value
+* `find(route)` = Find a value
+* `alter(route, key:)` = Alter a key (the last key in route)
+* `alter(route, value:)` = Alter a value, identical to `set`
+* `alter(route, key: value:)` = Alter a key and value, identical to a `set` and then `delete`
+* `delete(route)` = Delete a value
+
+Routes can be defined as an array of keys or indeces:
+
+```ruby
+  hash = { '$and' => [
+    { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+    { '$or' => [
+      { '#otherfeed' => {'thing' => [] } },
+    ]}
+  ]}
+  route = ['$and', 1, '$or', 0, '#otherfeed', 'thing']
+  ComplexHash.new(hash).find(route) # => []
+```
+
+But there's something cool hidden in the `set` message,
+if part of the structure is missing, it'll fill it in as it
+goes, e.g.:
+
+```ruby
+  hash = { '$and' => [
+    { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+    { '$or' => [
+      { '#otherfeed' => {'thing' => [] } },
+    ]}
+  ]}
+  route = ['$and', 1, '$or', 0, '#sup', 'thisthing']
+  ComplexHash.new(hash).set(route, 'hello')
+  puts hash.inspect #=>
+  # hash = { '$and' => [
+  #   { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+  #   { '$or' => [
+  #     { '#otherfeed' => {'thing' => [] } },
+  #     { '#sup' => {'thisthing' => 'hello' } },
+  #   ]}
+  # ]}
+```
+
+Great if you want it to be a hash, but what if you want to add
+an array, no worries, just say so in the route:
+
+```ruby
+  route = ['$and', 1, '$or', 0, ['#sup', :array], 0]
+  # Routes can also be defined in other ways
+  route = ['$and', 1, '$or', 0, { key: '#sup', type: :array }, 0]
+  route = ['$and', 1, '$or', 0, RouteElement.new('#sup', type: :array), 0]
+```
 
 ### Enumeration
 
 Coming soon...
+
+## Why?
+
+Alright, we needed to be able to find certain keys
+from all the keys contained within the complex hash as said keys
+were the instructions as to what data the hash would be able to match
+against. This peice of code was originally recursive. We were adding
+a feature that required us to also be able to edit these keys, mark
+them with a unique identifier. As I was writing this I decided I wasn't
+happy with the recursive nature of the key search as we have no guarantees
+about how nested the hash could be. As I refactored the find and built
+the edit it became obvious that the code wasn't tied to the project at
+hand so I refactored it out to here.
+
 
 ## Contributing
 
