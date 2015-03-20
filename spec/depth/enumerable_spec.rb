@@ -7,6 +7,7 @@ module Depth::Enumeration
 
     let(:enumerable_class) do
       Class.new do
+        include Depth::Actions
         include Depth::Enumeration::Enumerable
         attr_reader :base
         def initialize(base)
@@ -26,7 +27,161 @@ module Depth::Enumeration
 
     subject { enumerable_class.new(hash) }
 
+    describe '#each_with_object' do
+      it "performs as you'd expect reduce to" do
+        keys = subject.each_with_object([]) do |key, fragment, obj|
+          obj << key if key.is_a?(String)
+        end
+        expected = ['something', '#weather', 'thing', '#otherfeed', '$or', '$and']
+        expect(keys).to eq expected
+      end
+    end
+
+    describe '#reduce' do
+      it "performs as you'd expect reduce to" do
+        keys = subject.reduce(0) do |sum, key, fragment|
+          sum += (key.is_a?(String) ? 1 : 0)
+        end
+        expect(keys).to eq 6
+      end
+    end
+
+    shared_examples 'it maps changing self' do
+      let(:map_block) { proc { |x| x } }
+      let(:alter_map_block) { proc { |x| 'rarg' } }
+
+      it 'should return self' do
+        result = subject.send(map_message, &map_block)
+        expect(result).to be subject
+      end
+
+      context 'with alteration' do
+        it 'should change base' do
+          expect do
+            subject.send(map_message, &alter_map_block)
+          end.to change { subject.base }
+        end
+      end
+
+      context 'without alteration' do
+        it 'should not change contents' do
+          expect do
+            subject.send(map_message, &map_block)
+          end.to_not change { subject.base }
+        end
+      end
+    end
+
+    describe '#map_keys_and_values!' do
+      it_behaves_like 'it maps changing self' do
+        let(:map_message) { 'map_keys_and_values!' }
+        let(:map_block) { proc { |x, y, z| [x, y] } }
+        let(:alter_map_block) do
+          proc { |k, v, pt| 
+            next [k, v] if pt == :array
+            ["#{k}rargh", v]
+          }
+        end
+      end
+    end
+
+    describe '#map_keys!' do
+      it_behaves_like 'it maps changing self' do
+        let(:map_message) { 'map_keys!' }
+      end
+    end
+
+    describe '#map!' do
+      it_behaves_like 'it maps changing self' do
+        let(:map_message) { 'map!' }
+      end
+    end
+
+    shared_examples 'it maps to a new object' do
+      let(:map_block) { proc { |x| x } }
+      it 'should return a new object' do
+        result = subject.send(map_message, &map_block)
+        expect(result).to_not be subject
+      end
+
+      it 'should return an object of the same class' do
+        result = subject.send(map_message, &map_block)
+        expect(result.class).to be subject.class
+      end
+
+      context 'without alteration' do
+        it 'should return an object with the same contents' do
+          result = subject.send(map_message, &map_block)
+          expect(result.base).to eq subject.base
+        end
+      end
+    end
+
+    describe '#map_keys_and_values' do
+      it_behaves_like 'it maps to a new object' do
+        let(:map_message) { :map_keys_and_values }
+        let(:map_block) { proc { |x, y, z| [x, y] } }
+      end
+
+      context 'with alteration' do
+        let(:result) do
+          subject.map_keys_and_values do |k, v, pt|
+            next [k, v] unless pt == :hash
+            ["#{k}Altered", 'redacted']
+          end
+        end
+
+        it 'should differ in the expected fashion' do
+          expected =  { "$andAltered" => 'redacted' }
+          expect(result.base).to eq expected
+        end
+      end
+    end
+
+    describe '#map_keys' do
+      it_behaves_like 'it maps to a new object' do
+        let(:map_message) { :map_keys }
+      end
+
+      context 'with alteration' do
+        let(:result) do
+          subject.map_keys do |k|
+            "#{k}Altered"
+          end
+        end
+
+        it 'should differ in the expected fashion' do
+          expected =  { "$andAltered" => [
+            { "#weatherAltered" => { "somethingAltered" => [] } },
+            { "$orAltered" => [ { "#otherfeedAltered" => { "thingAltered" => [] } } ] } ]
+          }
+          expect(result.base).to eq expected
+        end
+      end
+    end
+
     describe '#map' do
+      it_behaves_like 'it maps to a new object' do
+        let(:map_message) { :map }
+      end
+
+      context 'with alteration' do
+        let(:result) do
+          subject.map do |f|
+            'altered' if f.is_a?(Hash)
+          end
+        end
+
+        it 'should differ in the expected fashion' do
+          expected = { "$and" => [ 'altered', 'altered' ] }
+          expect(result.base).to eq expected
+        end
+
+        it 'should return an object with the different contents' do
+          expect(result.base).to_not eq subject.base
+        end
+      end
+
     end
 
     describe '#each' do

@@ -1,15 +1,18 @@
 module Depth
   module Enumeration
     module Enumerable
+      #:nocov:
       def base
         raise NoMethodError.new('should be overridden')
       end
+      #:nocov:
 
       def each_with_object(object, &block)
-        each do |key, fragment|
-          block.call(key, fragment, object)
+        object.tap do |o|
+          each do |key, fragment|
+            block.call(key, fragment, o)
+          end
         end
-        object
       end
 
       def reduce(memo, &block)
@@ -21,25 +24,30 @@ module Depth
 
       def map_keys!(&block)
         @base = map_keys(&block).base
+        self
       end
 
       def map!(&block)
         @base = map(&block).base
+        self
       end
 
       def map_keys_and_values!(&block)
         @base = map_keys_and_values(&block).base
+        self
       end
 
       def map_keys(&block)
-        map_keys_and_values do |key, fragment|
+        map_keys_and_values do |key, fragment, parent_type|
+          # ignore if parent is array
+          next [key, fragment] if parent_type == :array
           [block.call(key), fragment]
         end
       end
 
       # Convention is that only values are mapped
       def map(&block)
-        map_keys_and_values do |key, fragment|
+        map_keys_and_values do |key, fragment, parent_type|
           [key, block.call(fragment)]
         end
       end
@@ -49,8 +57,8 @@ module Depth
           orig_key = node.parent_key
           existing = new_q.find(node.route)
           orig_fragment = existing.nil? ? node.fragment : existing
-          next [orig_key, orig_fragment] unless node.parent.hash?
-          block.call(orig_key, orig_fragment)
+          parent_type = node.parent.fragment_type
+          block.call(orig_key, orig_fragment, parent_type)
         end
       end
 
@@ -61,7 +69,7 @@ module Depth
       private
 
       def node_map(&block)
-        new_q = ComplexHash.new(base.class.new)
+        new_q = self.class.new(base.class.new)
         enumerate do |node|
           key, val = block.call(node, new_q)
           new_q.alter(node.route, key: key, value: val)

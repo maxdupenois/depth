@@ -1,8 +1,10 @@
 module Depth
   module Actions
+    #:nocov:
     def base
       raise NoMethodError.new('should be overridden')
     end
+    #:nocov:
 
     def set(route, value)
       route = RouteElement.convert_route(route)

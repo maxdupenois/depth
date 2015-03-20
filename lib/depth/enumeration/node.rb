@@ -9,7 +9,7 @@ module Depth
         route = []
         current = self
         while(!current.root?)
-          route << RouteElement.new(current.parent_key, fragment_type)
+          route << RouteElement.new(current.parent_key, type: current.fragment_type)
           current = current.parent
         end
         route.reverse
