@@ -39,10 +39,11 @@ The above is a sample complex hash, to use the gem to
 start manipulating it is pretty simple:
 
 ```ruby
-complex_hash = Depth::ComplexHash.new(hash)
+  complex_hash = Depth::ComplexHash.new(hash)
 ```
 
-Not exactly rocket science (not even data science).
+Not exactly rocket science (not even data science). You
+can retrieve the hash with either `base` or `to_h`.
 
 ### Manipulation
 
@@ -69,7 +70,7 @@ Routes can be defined as an array of keys or indeces:
     ]}
   ]}
   route = ['$and', 1, '$or', 0, '#otherfeed', 'thing']
-  ComplexHash.new(hash).find(route) # => []
+  Depth::ComplexHash.new(hash).find(route) # => []
 ```
 
 But there's something cool hidden in the `set` message,
@@ -84,7 +85,7 @@ goes, e.g.:
     ]}
   ]}
   route = ['$and', 1, '$or', 0, '#sup', 'thisthing']
-  ComplexHash.new(hash).set(route, 'hello')
+  Depth::ComplexHash.new(hash).set(route, 'hello')
   puts hash.inspect #=>
   # hash = { '$and' => [
   #   { '#weather' => { 'something' => [], 'thisguy' => 4 } },
@@ -109,15 +110,113 @@ an array, no worries, just say so in the route:
 
 The messages signatures relating to enumeration are:
 
-* `each` = yields `key_or_index` and `fragment`
-* `map` = yields `fragment`, returns a new complex hash
+* `each` = yields `key_or_index` and `fragment`, returns the complex hash
+* `map` = yields `key_or_index`, `fragment` and `parent_type`, returns a new complex hash
+* `map_values` = yields  `fragment`, returns a new complex hash
 * `map_keys` = yields `key_or_index`, returns a new complex hash
-* `map_keys_and_values` = yields `key_or_index`, `fragment` and `parent_type`, returns a new complex hash
 * `map!`, `map_keys!` and `map_keys_and_values!`, returns a new complex hash
 * `reduce(memo)` = yields `memo`, `key` and `fragment`, returns memo
 * `each_with_object(obj)` = yields `key`, `fragment` and `object`, returns object
 
-More information coming soon...
+_Fragment refers to a chunk of the original hash_
+
+These, perhaps, require a bit more explanation:
+
+#### each
+
+The staple, and arguably the most important, of all the enumeration methods,
+
+```ruby
+  hash = { ... }
+  Depth::ComplexHash.new(hash).each { |key, fragment| }
+```
+
+Each yields keys and associated fragments from the leaf nodes
+backwards. For example, the hash:
+
+```ruby
+  { '$and' => [{ 'something' => { 'x' => 4 } }] }
+```
+
+would yield:
+
+1. `x, 4`
+2. `something, { "x" => 4 }`
+3. `0, { "something" => {  "x" => 4 } }`
+4. `$and, [{ "something" => {  "x" => 4 } }]`
+
+
+#### map
+
+Map yields both the current key/index and the current fragment,
+expecting both returned in an array. I've yet to decide if
+there should be a third argument that tells you whether or not
+the key/index is for an array or a hash. I've not needed it
+but I suspect it might be useful. If it comes up I'll add it.
+
+
+```ruby
+  hash = { '$and' => [{ 'something' => { 'x' => 4 } }] }
+  Depth::ComplexHash.new(hash).map do |key, fragment|
+    [key, fragment]
+  end
+```
+
+like `each` the above would yield:
+
+1. `x, 4`
+2. `something, { "x" => 4 }`
+3. `0, { "something" => {  "x" => 4 } }`
+4. `$and, [{ "something" => {  "x" => 4 } }]`
+
+and with the contents being unchanged it would return a
+new complex hash with equal contents to the current one.
+
+#### map_values
+
+```ruby
+  hash = { '$and' => [{ 'something' => { 'x' => 4 } }] }
+  Depth::ComplexHash.new(hash).map_values do |fragment|
+    fragment
+  end
+```
+
+This will yield only the fragments from `map`, useful if
+you only wish to alter the value parts of the hash.
+
+#### map_keys
+
+```ruby
+  hash = { '$and' => [{ 'something' => { 'x' => 4 } }] }
+  Depth::ComplexHash.new(hash).map_keys do |key|
+    key
+  end
+```
+
+This will yield only the keys from `map`, useful if
+you only wish to alter the keys.
+
+#### map!, map_keys!, map_values!
+
+The same as their non-exclamation marked siblings save that
+they will cause the complex hash on which they operate to change.
+
+#### reduce and each_with_object
+
+Operate as you would expect. Can I take a moment to point out how
+irritating it is that `each_with_object` yields the object you pass
+in as its last argument while `reduce` yields it as its first O_o?
+
+```ruby
+  hash = { '$and' => [{ 'something' => { 'x' => 4 } }] }
+  Depth::ComplexHash.new(hash).reduce(0) do |memo, key, fragment|
+    memo += 1
+  end
+
+  Depth::ComplexHash.new(hash).each_with_object([]) do |key, fragment, obj|
+    obj << key
+  end
+```
 
 ## Why?
 

@@ -72,13 +72,13 @@ module Depth::Enumeration
       end
     end
 
-    describe '#map_keys_and_values!' do
+    describe '#map!' do
       it_behaves_like 'it maps changing self' do
-        let(:map_message) { 'map_keys_and_values!' }
-        let(:map_block) { proc { |x, y, z| [x, y] } }
+        let(:map_message) { 'map!' }
+        let(:map_block) { proc { |x, y| [x, y] } }
         let(:alter_map_block) do
-          proc { |k, v, pt| 
-            next [k, v] if pt == :array
+          proc { |k, v| 
+            next [k, v] unless k.is_a?(String)
             ["#{k}rargh", v]
           }
         end
@@ -88,12 +88,18 @@ module Depth::Enumeration
     describe '#map_keys!' do
       it_behaves_like 'it maps changing self' do
         let(:map_message) { 'map_keys!' }
+        let(:alter_map_block) do
+          proc { |k|
+            next k unless k.is_a?(String)
+            "#{k}Altered"
+          }
+        end
       end
     end
 
-    describe '#map!' do
+    describe '#map_values!' do
       it_behaves_like 'it maps changing self' do
-        let(:map_message) { 'map!' }
+        let(:map_message) { 'map_values!' }
       end
     end
 
@@ -117,16 +123,16 @@ module Depth::Enumeration
       end
     end
 
-    describe '#map_keys_and_values' do
+    describe '#map' do
       it_behaves_like 'it maps to a new object' do
-        let(:map_message) { :map_keys_and_values }
-        let(:map_block) { proc { |x, y, z| [x, y] } }
+        let(:map_message) { :map }
+        let(:map_block) { proc { |x, y| [x, y] } }
       end
 
       context 'with alteration' do
         let(:result) do
-          subject.map_keys_and_values do |k, v, pt|
-            next [k, v] unless pt == :hash
+          subject.map do |k, v|
+            next [k, v] unless k.is_a?(String)
             ["#{k}Altered", 'redacted']
           end
         end
@@ -146,6 +152,7 @@ module Depth::Enumeration
       context 'with alteration' do
         let(:result) do
           subject.map_keys do |k|
+            next k unless k.is_a?(String)
             "#{k}Altered"
           end
         end
@@ -160,14 +167,14 @@ module Depth::Enumeration
       end
     end
 
-    describe '#map' do
+    describe '#map_values' do
       it_behaves_like 'it maps to a new object' do
-        let(:map_message) { :map }
+        let(:map_message) { :map_values }
       end
 
       context 'with alteration' do
         let(:result) do
-          subject.map do |f|
+          subject.map_values do |f|
             'altered' if f.is_a?(Hash)
           end
         end

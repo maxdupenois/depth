@@ -24,7 +24,7 @@ module Depth
           type = el.count > 1 ? el[1] : :hash
           RouteElement.new(el[0], type: type)
         when Hash
-          key_or_index = el.fetch(:key, el.fetch(:index))
+          key_or_index = el.fetch(:key) { el.fetch(:index) }
           RouteElement.new(key_or_index, type: el.fetch(:type, :hash))
         else
           RouteElement.new(el)

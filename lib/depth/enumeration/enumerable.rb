@@ -27,38 +27,34 @@ module Depth
         self
       end
 
+      def map_values!(&block)
+        @base = map_values(&block).base
+        self
+      end
+
       def map!(&block)
         @base = map(&block).base
         self
       end
 
-      def map_keys_and_values!(&block)
-        @base = map_keys_and_values(&block).base
-        self
-      end
-
       def map_keys(&block)
-        map_keys_and_values do |key, fragment, parent_type|
-          # ignore if parent is array
-          next [key, fragment] if parent_type == :array
+        map do |key, fragment|
           [block.call(key), fragment]
         end
       end
 
-      # Convention is that only values are mapped
-      def map(&block)
-        map_keys_and_values do |key, fragment, parent_type|
+      def map_values(&block)
+        map do |key, fragment, parent_type|
           [key, block.call(fragment)]
         end
       end
 
-      def map_keys_and_values(&block)
+      def map(&block)
         node_map do |node, new_q|
           orig_key = node.parent_key
           existing = new_q.find(node.route)
           orig_fragment = existing.nil? ? node.fragment : existing
-          parent_type = node.parent.fragment_type
-          block.call(orig_key, orig_fragment, parent_type)
+          block.call(orig_key, orig_fragment)
         end
       end
 
@@ -88,7 +84,7 @@ module Depth
             current = current.parent
           end
         end while !current.root? || current.next?
-        root.fragment
+        self
       end
 
     end
