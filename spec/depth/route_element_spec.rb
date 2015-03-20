@@ -5,6 +5,16 @@ module Depth
     describe '::convert' do
       let(:el) { nil }
       let(:result) { described_class.convert(el) }
+      context 'with any random thing' do
+        let(:el) { 4 }
+        it 'should set the type hash' do
+          expect(result.type).to eq :hash
+        end
+
+        it 'should set the key as the element' do
+          expect(result.key).to eq el
+        end
+      end
 
       context 'with a hash' do
         let(:el) { { key: 'x', type: :array } }
