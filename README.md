@@ -111,6 +111,8 @@ an array, no worries, just say so in the route:
 The messages signatures relating to enumeration are:
 
 * `each` = yields `key_or_index` and `fragment`, returns the complex hash
+* `select` = yields `key_or_index`, `fragment`, returns a new complex hash
+* `reject` = yields `key_or_index`, `fragment`, returns a new complex hash
 * `map` = yields `key_or_index`, `fragment` and `parent_type`, returns a new complex hash
 * `map_values` = yields  `fragment`, returns a new complex hash
 * `map_keys` = yields `key_or_index`, returns a new complex hash
@@ -145,6 +147,36 @@ would yield:
 3. `0, { "something" => {  "x" => 4 } }`
 4. `$and, [{ "something" => {  "x" => 4 } }]`
 
+#### select
+
+```ruby
+  hash = { 'x' => 1, '$c' => 2, 'v' => { '$x' => :a }, '$f' => { 'a' => 3, '$l' => 4 }}
+
+  Depth::ComplexHash.new(hash).select do |key, fragment|
+    key =~ /^\$/
+  end
+```
+
+The above would yield:
+
+1. `x, 1`
+2. `$c, 2`
+3. `$x, a`
+4. `v, {"$x"=>:a}`
+5. `a, 3`
+6. `$l, 4`
+7. `$f, {"$l"=>4}`
+
+and with the boolean only selecting keys with a dollar sign
+it would return a new complex hash
+
+```ruby
+{ "$c" => 2, "$f" => { '$l' => 4 } }
+```
+
+#### reject
+
+Unsurprisingly this is the inverse of select.
 
 #### map
 
