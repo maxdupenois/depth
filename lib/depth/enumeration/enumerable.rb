@@ -15,6 +15,28 @@ module Depth
         end
       end
 
+      def select(&block)
+        new_q = self.class.new(base.class.new)
+        routes_to_delete = []
+        enumerate do |node|
+          key = node.parent_key
+          existing = new_q.find(node.route)
+          fragment = existing.nil? ? node.fragment : existing
+          keep = block.call(key, fragment)
+          if keep
+            new_q.alter(node.route, key: key, value: fragment)
+          else
+            routes_to_delete << node.route
+          end
+        end
+        routes_to_delete.each { |r| new_q.delete(r) }
+        new_q
+      end
+
+      def reject(&block)
+        select{ |key, fragment| !block.call(key, fragment) }
+      end
+
       def reduce(memo, &block)
         each do |key, fragment|
           memo = block.call(memo, key, fragment)

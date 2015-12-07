@@ -37,6 +37,32 @@ module Depth::Enumeration
       end
     end
 
+    describe '#select' do
+      let(:hash) do
+        { 'x' => 1, '$c' => 2, 'v' => { '$x' => :a }, '$f' => { 'a' => 3 }}
+      end
+      it 'keeps only that which you desire' do
+        onlydollars = subject.select do |key, fragment|
+          key =~ /^\$/
+        end
+        expected = {"$c"=>2, "$f"=>{}}
+        expect(onlydollars.base).to eq expected
+      end
+    end
+
+    describe '#reject' do
+      let(:hash) do
+        { 'x' => 1, '$c' => 2, 'v' => { '$x' => :a }, '$f' => { 'a' => 3 }}
+      end
+      it 'reject that which you is not your desire' do
+        onlydollars = subject.reject do |key, fragment|
+          key =~ /^\$/
+        end
+        expected = {"x"=>1, "v"=>{}}
+        expect(onlydollars.base).to eq expected
+      end
+    end
+
     describe '#reduce' do
       it "performs as you'd expect reduce to" do
         keys = subject.reduce(0) do |sum, key, fragment|
