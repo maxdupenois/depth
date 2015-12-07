@@ -39,13 +39,13 @@ module Depth::Enumeration
 
     describe '#select' do
       let(:hash) do
-        { 'x' => 1, '$c' => 2, 'v' => { '$x' => :a }, '$f' => { 'a' => 3 }}
+        { 'x' => 1, '$c' => 2, 'v' => { '$x' => :a }, '$f' => { 'a' => 3, '$l' => 4 }}
       end
       it 'keeps only that which you desire' do
         onlydollars = subject.select do |key, fragment|
           key =~ /^\$/
         end
-        expected = {"$c"=>2, "$f"=>{}}
+        expected = {"$c"=>2, "$f"=>{'$l'=>4}}
         expect(onlydollars.base).to eq expected
       end
     end
