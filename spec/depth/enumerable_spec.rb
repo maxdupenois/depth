@@ -157,7 +157,7 @@ module Depth::Enumeration
 
       context 'with alteration' do
         let(:result) do
-          subject.map do |k, v|
+          subject.map do |k, v, r|
             next [k, v] unless k.is_a?(String)
             ["#{k}Altered", 'redacted']
           end
@@ -218,6 +218,22 @@ module Depth::Enumeration
     end
 
     describe '#each' do
+      it 'should keep track of where we are' do
+        routes = []
+        subject.each do |_, _, route|
+          routes << route
+        end
+
+        expected = [
+          ["$and", 0, "#weather", "something"], ["$and", 0, "#weather"],
+          ["$and", 0], ["$and", 1, "$or", 0, "#otherfeed", "thing"],
+          ["$and", 1, "$or", 0, "#otherfeed"], ["$and", 1, "$or", 0],
+          ["$and", 1, "$or"], ["$and", 1], ["$and"]
+        ]
+
+        expect(routes).to eq(expected)
+      end
+
       it 'should sort through all keys and values' do
         enumerated = []
         subject.each do |key, fragment|

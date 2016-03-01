@@ -15,6 +15,10 @@ module Depth
         route.reverse
       end
 
+      def humanized_route
+        route.map(&:key_or_index)
+      end
+
       def next
         if array?
           val = fragment[current_index]

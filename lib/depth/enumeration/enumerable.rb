@@ -8,9 +8,9 @@ module Depth
       #:nocov:
 
       def each_with_object(object, &block)
-        object.tap do |o|
-          each do |key, fragment|
-            block.call(key, fragment, o)
+        object.tap do |obj|
+          each do |key, fragment, route|
+            block.call(key, fragment, obj, route)
           end
         end
       end
@@ -18,11 +18,11 @@ module Depth
       def select(&block)
         new_q = self.class.new(base.class.new)
         routes_to_delete = []
-        enumerate do |node|
+        enumerate do |node, route|
           key = node.parent_key
           existing = new_q.find(node.route)
           fragment = existing.nil? ? node.fragment : existing
-          keep = block.call(key, fragment)
+          keep = block.call(key, fragment, route)
           if keep
             new_q.alter(node.route, key: key, value: fragment)
           else
@@ -34,12 +34,12 @@ module Depth
       end
 
       def reject(&block)
-        select{ |key, fragment| !block.call(key, fragment) }
+        select{ |key, fragment, route| !block.call(key, fragment, route) }
       end
 
       def reduce(memo, &block)
-        each do |key, fragment|
-          memo = block.call(memo, key, fragment)
+        each do |key, fragment, route|
+          memo = block.call(memo, key, fragment, route)
         end
         memo
       end
@@ -60,36 +60,36 @@ module Depth
       end
 
       def map_keys(&block)
-        map do |key, fragment|
-          [block.call(key), fragment]
+        map do |key, fragment, route|
+          [block.call(key, route), fragment]
         end
       end
 
       def map_values(&block)
-        map do |key, fragment, parent_type|
-          [key, block.call(fragment)]
+        map do |key, fragment, route|
+          [key, block.call(fragment, route)]
         end
       end
 
       def map(&block)
-        node_map do |node, new_q|
+        node_map do |node, new_q, route|
           orig_key = node.parent_key
           existing = new_q.find(node.route)
           orig_fragment = existing.nil? ? node.fragment : existing
-          block.call(orig_key, orig_fragment)
+          block.call(orig_key, orig_fragment, route)
         end
       end
 
       def each(&block)
-        enumerate { |node| block.call(node.parent_key, node.fragment) }
+        enumerate { |node, route| block.call(node.parent_key, node.fragment, route) }
       end
 
       private
 
       def node_map(&block)
         new_q = self.class.new(base.class.new)
-        enumerate do |node|
-          key, val = block.call(node, new_q)
+        enumerate do |node, route|
+          key, val = block.call(node, new_q, route)
           new_q.alter(node.route, key: key, value: val)
         end
         new_q
@@ -102,7 +102,7 @@ module Depth
           if current.next?
             current = current.next
           elsif !current.root?
-            yield(current)
+            yield(current, current.humanized_route)
             current = current.parent
           end
         end while !current.root? || current.next?
