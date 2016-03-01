@@ -71,6 +71,10 @@ Routes can be defined as an array of keys or indeces:
   ]}
   route = ['$and', 1, '$or', 0, '#otherfeed', 'thing']
   Depth::ComplexHash.new(hash).find(route) # => []
+
+  # Or with a default
+  Depth::ComplexHash.new(hash).find(%w(not a route), default: 'hello') # => 'hello'
+
 ```
 
 But there's something cool hidden in the `set` message,
@@ -106,6 +110,39 @@ an array, no worries, just say so in the route:
   route = ['$and', 1, '$or', 0, RouteElement.new('#sup', type: :array), 0]
 ```
 
+Find can also perform the same magic if you set the keyword
+argument `create` to be true. A default value can also be supplied:
+
+```ruby
+  hash = { '$and' => [
+    { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+    { '$or' => [
+      { '#otherfeed' => {'thing' => [] } },
+    ]}
+  ]}
+  route = ['$and', 1, '$or', 0, '#sup', 'thisthing']
+  Depth::ComplexHash.new(hash).find(route, create: true)
+  puts hash.inspect #=>
+  # hash = { '$and' => [
+  #   { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+  #   { '$or' => [
+  #     { '#otherfeed' => {'thing' => [] } },
+  #     { '#sup' => { } },
+  #   ]}
+  # ]}
+
+  # Or if you supply a default value as well
+  val = Depth::ComplexHash.new(hash).find(route, create: true, default: 'blargle')
+  puts val #=> 'blargle'
+  puts hash.inspect #=>
+  # hash = { '$and' => [
+  #   { '#weather' => { 'something' => [], 'thisguy' => 4 } },
+  #   { '$or' => [
+  #     { '#otherfeed' => {'thing' => [] } },
+  #     { '#sup' => { 'thisthing' => 'blargle' } },
+  #   ]}
+  # ]}
+```
 ### Enumeration
 
 The messages signatures relating to enumeration are:
