@@ -116,13 +116,19 @@ The messages signatures relating to enumeration are:
 * `map` = yields `key_or_index`, `fragment` and `parent_type`, returns a new complex hash
 * `map_values` = yields  `fragment`, returns a new complex hash
 * `map_keys` = yields `key_or_index`, returns a new complex hash
-* `map!`, `map_keys!` and `map_keys_and_values!`, returns a new complex hash
+* `map!`, `map_keys!` and `map_keys_and_values!`, returns the base complex hash
 * `reduce(memo)` = yields `memo`, `key` and `fragment`, returns memo
 * `each_with_object(obj)` = yields `key`, `fragment` and `object`, returns object
 
 _Fragment refers to a chunk of the original hash_
 
 These, perhaps, require a bit more explanation:
+
+_NB_ All of these methods yield an argument at the end
+which is the route taken to get to this fragment of the hash,
+I've not detailed the use of it here because it's rarely necessary but
+it's available in case you have some complex map rules that change
+based on where you are in the hash.
 
 #### each
 
