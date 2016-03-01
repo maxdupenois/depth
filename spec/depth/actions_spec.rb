@@ -102,6 +102,31 @@ module Depth
     end
 
     describe '#find' do
+      context 'with create true' do
+        it 'should create the route if it needs to' do
+          route = [['$yo', :array], 0, '$thing']
+          expect {
+            subject.find(route, create: true)
+          }.to change { subject.base['$yo'] }.to( [{}] )
+        end
+
+        context 'with a default value' do
+          it 'should create the route and value it needs to' do
+            route = [['$yo', :array], 0, '$thing']
+            expect {
+              subject.find(route, create: true, default: 4)
+            }.to change { subject.base['$yo'] }.to( [{'$thing' => 4}] )
+          end
+        end
+      end
+
+      context 'with a default value and a missing route' do
+        it 'should return the default' do
+          route = ['$yo', 0, '$thing']
+          expect(subject.find(route, default: 'blah')).to eq 'blah'
+        end
+      end
+
       it 'should let me find an existing value' do
         route = [['$and', :array], [0, :hash],
                  ['#weather', :hash], ['something', :array]]

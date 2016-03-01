@@ -14,11 +14,19 @@ module Depth
       object[route.last.key] = value
     end
 
-    def find(route)
+    def find(route, create: false, default: nil)
       route = RouteElement.convert_route(route)
-      route.reduce(Traverser.new(base)) { |t, route_el|
-        t.next(route_el.key)
+      parent = route[0 ... -1].reduce(Traverser.new(base)) { |t, route_el|
+        if create
+          t.next_or_create(route_el.key) { route_el.create }
+        else
+          t.next(route_el.key)
+        end
       }.object
+      object = parent ? parent[route.last.key] : nil
+      return object unless object.nil?
+      return parent[route.last.key] = default if create && default
+      default
     end
 
     def alter(route, key: nil, value: nil)
