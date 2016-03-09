@@ -9,9 +9,13 @@ module Depth::Enumeration
       Class.new do
         include Depth::Actions
         include Depth::Enumeration::Enumerable
-        attr_reader :base
+        attr_reader :base, :creation_proc, :next_proc,
+          :key_transformer
         def initialize(base)
           @base = base
+          @creation_proc = proc { |o, k, v| o[k] = v }
+          @next_proc = proc { |o, k| o[k] }
+          @key_transformer = proc { |_, k| k }
         end
       end
     end
