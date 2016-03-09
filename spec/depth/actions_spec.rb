@@ -6,9 +6,13 @@ module Depth
     let(:actions_class) do
       Class.new do
         include Actions
-        attr_reader :base
-        def initialize(base)
+        attr_reader :base, :next_proc, :creation_proc,
+          :key_transformer
+        def initialize(base, next_proc:, key_transformer:, creation_proc:)
           @base = base
+          @next_proc = next_proc
+          @creation_proc = creation_proc
+          @key_transformer = key_transformer
         end
       end
     end
@@ -24,9 +28,71 @@ module Depth
       ]}
     end
 
-    subject { actions_class.new(hash) }
+    let(:next_proc) { proc { |o, k| o[k] } }
+    let(:creation_proc) { proc { |o, k, v| o[k] = v } }
+    let(:key_transformer) { proc { |_, k| k } }
+
+    subject do
+      actions_class.new(
+        hash, next_proc: next_proc,
+        creation_proc: creation_proc,
+        key_transformer: key_transformer
+      )
+    end
 
     describe '#set' do
+      context 'with a key transformer' do
+        let(:key_transformer) do
+          proc { |_, k|
+            next(k) if k.to_s !~ /index_/
+            k.gsub(/index_/, '').to_i
+          }
+        end
+
+        it 'should still work' do
+          route = [['$and', :array], ['index_0', :hash],
+                   ['#weather', :hash], ['something', :array]]
+          expect do
+            subject.set(route, :test)
+          end.to change { hash['$and'][0]['#weather']['something'] }.to(:test)
+        end
+      end
+
+      context 'with a custom creation proc' do
+        let(:creation_proc) do
+          proc { |o, k, v| o[k] = '2' }
+        end
+
+        it 'should let me change the creation proc' do
+          route = [['$and', :array], [0, :hash],
+                   ['#weather', :hash], ['something', :array]]
+          expect do
+            subject.set(route, :test)
+          end.to change { hash['$and'][0]['#weather']['something'] }.to('2')
+
+        end
+      end
+
+      context 'with a custom next proc' do
+        let(:next_proc) do
+          proc { |obj, key|
+            if(obj.is_a?(Array))
+              obj.at(key)
+            else
+              obj.fetch(key)
+            end
+          }
+        end
+
+        it 'should allow me to change how I traverse the route' do
+          route = [['$and', :array], [0, :hash],
+                   ['#weather', :hash], ['something', :array]]
+          expect do
+            subject.set(route, :test)
+          end.to change { hash['$and'][0]['#weather']['something'] }.to(:test)
+        end
+      end
+
       it 'should let me set an existing value' do
         route = [['$and', :array], [0, :hash],
                  ['#weather', :hash], ['something', :array]]

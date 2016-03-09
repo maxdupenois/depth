@@ -1,5 +1,17 @@
 module Depth
-  class Traverser < Struct.new(:object)
+  class Traverser
+
+    attr_reader :object
+
+    def initialize(object,
+                   key_transformer:,
+                   next_proc:, creation_proc:)
+      @object = object
+      @next_proc = next_proc
+      @creation_proc = creation_proc
+      @key_transformer = key_transformer
+    end
+
     def array?
       object.is_a?(Array)
     end
@@ -9,14 +21,43 @@ module Depth
     end
 
     def next(key_or_index)
-      return Traverser.new(nil) if object.nil?
-      Traverser.new(object[key_or_index])
+      original_key = key_or_index
+      key_or_index = key_transformer.call(object, key_or_index)
+      next_object = if object.nil?
+                      nil
+                    else
+                      next_proc.call(object, key_or_index, original_key)
+                    end
+
+      Traverser.new(
+        next_object,
+        key_transformer: key_transformer,
+        next_proc: next_proc,
+        creation_proc: creation_proc
+      )
     end
 
     def next_or_create(key_or_index, &block)
-      return Traverser.new(nil) if object.nil?
-      object[key_or_index] = block.call if object[key_or_index].nil?
-      Traverser.new(object[key_or_index])
+      original_key = key_or_index
+      key_or_index = key_transformer.call(object, key_or_index)
+      return Traverser.new(
+        nil,
+        key_transformer: key_transformer,
+        next_proc: next_proc,
+        creation_proc: creation_proc
+      ) if object.nil?
+      next_object = next_proc.call(object, key_or_index, original_key)
+      creation_proc.call(object, key_or_index, block.call, original_key) if next_object.nil?
+      Traverser.new(
+        # Refetch it to allow for creation
+        next_proc.call(object, key_or_index, original_key),
+        key_transformer: key_transformer,
+        next_proc: next_proc,
+        creation_proc: creation_proc
+      )
     end
+
+  private
+    attr_reader :next_proc, :creation_proc, :key_transformer
   end
 end
