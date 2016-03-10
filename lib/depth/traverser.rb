@@ -21,13 +21,16 @@ module Depth
     end
 
     def next(key_or_index)
+      return Traverser.new(
+        nil,
+        key_transformer: key_transformer,
+        next_proc: next_proc,
+        creation_proc: creation_proc
+      ) if object.nil?
+
       original_key = key_or_index
       key_or_index = key_transformer.call(object, key_or_index)
-      next_object = if object.nil?
-                      nil
-                    else
-                      next_proc.call(object, key_or_index, original_key)
-                    end
+      next_object = next_proc.call(object, key_or_index, original_key)
 
       Traverser.new(
         next_object,
@@ -38,14 +41,15 @@ module Depth
     end
 
     def next_or_create(key_or_index, &block)
-      original_key = key_or_index
-      key_or_index = key_transformer.call(object, key_or_index)
       return Traverser.new(
         nil,
         key_transformer: key_transformer,
         next_proc: next_proc,
         creation_proc: creation_proc
       ) if object.nil?
+
+      original_key = key_or_index
+      key_or_index = key_transformer.call(object, key_or_index)
       next_object = next_proc.call(object, key_or_index, original_key)
       creation_proc.call(object, key_or_index, block.call, original_key) if next_object.nil?
       Traverser.new(
