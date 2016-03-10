@@ -48,9 +48,12 @@ module Depth
           t.next(route_el.key)
         end
       }.object
+
+      return default if parent.nil?
+
       original_key = route.last.key
       transformed_key = key_transformer.call(parent, route.last.key)
-      object = parent ? next_proc.call(parent, transformed_key, original_key) : nil
+      object = next_proc.call(parent, transformed_key, original_key)
       return object unless object.nil?
       return creation_proc.call(parent, transformed_key, default, original_key) if create && default
       default
