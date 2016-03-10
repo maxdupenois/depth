@@ -193,6 +193,13 @@ module Depth
         end
       end
 
+      context 'with a missing route should return nil' do
+        it 'should return nil' do
+          route = ['$yo', 0, '$thing', 3, '434']
+          expect(subject.find(route)).to be_nil
+        end
+      end
+
       it 'should let me find an existing value' do
         route = [['$and', :array], [0, :hash],
                  ['#weather', :hash], ['something', :array]]
