@@ -60,9 +60,9 @@ module Depth
     end
 
     def alter(route, key: nil, value: nil)
-      return set(route, value) if key == nil
+      return set(route, value) if key.nil?
       route = RouteElement.convert_route(route)
-      value = find(route) unless value
+      value = find(route) if value.nil?
       new_route = (route[0 ... -1] << RouteElement.convert(key))
       # ensure it exists
       set(new_route, value)
